@@ -249,16 +249,14 @@ Mutate an agent preset based on agent.fleet
 {{- if $.Values.agent.fleet.url -}}
 {{- $extraEnvs = append $extraEnvs (dict "name" "FLEET_URL" "value" $.Values.agent.fleet.url) -}}
 {{- end -}}
-{{- if ($.Values.agent.fleet.token)._mountPath -}}
-{{- $extraEnvs = append $extraEnvs (dict "name" "FLEET_ENROLLMENT_TOKEN" "value" ($.Values.agent.fleet.token)._mountPath) -}}
-{{- if ($.Values.agent.fleet.token)._volume -}}
-{{- $extraVolumes = append $extraVolumes ($.Values.agent.fleet.token)._volume -}}
-{{- end -}}
-{{- if ($.Values.agent.fleet.token)._volumeMount -}}
-{{- $extraVolumeMounts = append $extraVolumeMounts ($.Values.agent.fleet.token)._volumeMount -}}
-{{- end -}}
+{{/* Handle fleet enrollment token - use valueFrom.secretKeyRef for secrets, direct value for plain text */}}
+{{- if ($.Values.agent.fleet.token).valueFromSecret.name -}}
+{{- $extraEnvs = append $extraEnvs (dict "name" "FLEET_ENROLLMENT_TOKEN" "valueFrom" (dict "secretKeyRef" (dict "name" ($.Values.agent.fleet.token).valueFromSecret.name "key" ($.Values.agent.fleet.token).valueFromSecret.key))) -}}
 {{- else if ($.Values.agent.fleet.token).value -}}
 {{- $extraEnvs = append $extraEnvs (dict "name" "FLEET_ENROLLMENT_TOKEN" "value" ($.Values.agent.fleet.token).value) -}}
+{{- else if $.Values.agent.fleet.token -}}
+{{/* Backward compatibility: if token is still a string */}}
+{{- $extraEnvs = append $extraEnvs (dict "name" "FLEET_ENROLLMENT_TOKEN" "value" $.Values.agent.fleet.token) -}}
 {{- end -}}
 {{- if $.Values.agent.fleet.insecure -}}
 {{- $extraEnvs = append $extraEnvs (dict "name" "FLEET_INSECURE" "value" (quote $.Values.agent.fleet.insecure)) -}}
